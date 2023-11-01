@@ -1,0 +1,66 @@
+from sklearn.preprocessing import minmax_scale
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.lines import Line2D
+
+def XAI_pre_DST_Predikciu(data_instance, model, interval_length, class_of_interested, value_for_shutdown):
+    testovacia_vzorka = data_instance.reshape(1,6,1)
+    y_pred_single = model.predict(testovacia_vzorka)
+    
+    number_of_intervals = n_input // interval_length
+    importance_of_intervals = []
+    for i in range(number_of_intervals):
+        perturbovana_vzorka = np.zeros_like(testovacia_vzorka)
+        perturbovana_vzorka[:] = testovacia_vzorka[:]
+        
+        for x in range(number_of_intervals):
+            perturbovana_vzorka[0][i*interval_length:(i+1)*interval_length][0] = value_for_shutdown
+        nova_predikcia = model.predict(perturbovana_vzorka)
+        
+        #if nova_predikcia[0][class_of_interested] < -20:
+            #importance = y_pred_single[0][class_of_interested] - nova_predikcia[0][class_of_interested]
+            #importance_of_intervals.append(importance)
+        #else:
+            #importance_of_intervals.append(0)
+        importance = y_pred_single[0][class_of_interested] - nova_predikcia[0][class_of_interested]
+        #if importance >= 0:
+           # importance = 0
+        importance_of_intervals.append(importance)
+    print(importance_of_intervals)
+    audio_scaled = minmax_scale(importance_of_intervals, feature_range=(0,1))
+    for i in range(number_of_intervals):
+        audio_scaled[i] = 1- audio_scaled[i]
+    audio_scaled1 = np.repeat(audio_scaled,interval_length)
+    print(audio_scaled1)
+    
+    # Vizualizácia
+    dst = data_instance
+
+    time_data = np.arange(6)
+    fig = plt.figure(figsize=(26,3))
+    
+    plt.plot(time_data, dst[0:6],color='black')
+    plt.xlabel("time in hours DST")
+    
+    ax = plt.subplot(111)
+    plt.minorticks_on()
+    grid_x_ticks = np.arange(0, 7, 1)
+    ax.set_xticks(grid_x_ticks , minor=True)
+    plt.grid(which='minor', linestyle=':', color='black', linewidth='0.5')
+    plt.grid(which='major', linestyle=':', color='black', linewidth='0.5')
+    
+    custom_lines = [Line2D([0], [0], color= 'black', lw=4),
+                    Line2D([0], [0], color='red', lw=4),
+                    Line2D([0], [0], color='orange', lw=4)]
+    
+    ax.legend(custom_lines,['Najdôležitejšia oblasť', 'dôležitá oblasť', 'nízko dôležitá oblasť'],loc='center left', bbox_to_anchor=(1, 0.5))
+    
+    ymin, ymax = plt.ylim()
+    plt.fill_between(time_data, ymin, ymax, where= (audio_scaled1[0:6] > 0.85) & (audio_scaled1[0:6] <= 1), color='black', alpha=0.8)
+    plt.fill_between(time_data, ymin, ymax, where= (audio_scaled1[0:6] > 0.6) & (audio_scaled1[0:6] <= 0.85), color='red', alpha=1)
+    plt.fill_between(time_data, ymin, ymax, where= (audio_scaled1[0:6] > 0.5) & (audio_scaled1[0:6] <= 0.6), color='orange', alpha=0.3)
+    
+    plt.close(fig)
+    return fig
+
+XAI_pre_DST_Predikciu(test_generator[0][0][96], model,2, 0, value_for_shutdown)
