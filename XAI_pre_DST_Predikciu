@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
+
+X_filtered = X_train[X_train > -20]
+value_for_shutdown = np.mean(X_filtered)
+value_for_shutdown
+
 def XAI_pre_DST_Predikciu(data_instance, model, interval_length, class_of_interested, value_for_shutdown):
     testovacia_vzorka = data_instance.reshape(1,6,1)
     y_pred_single = model.predict(testovacia_vzorka)
