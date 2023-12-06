@@ -1,0 +1,10 @@
+important_dates = []
+
+for index, row in df.iterrows():
+    if row['y_true'] < -150:
+        date = pd.to_datetime(row['time']).date()
+        important_dates.append(date)
+
+important_dates = list(set(important_dates))
+
+print(important_dates)
