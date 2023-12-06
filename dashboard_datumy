@@ -1,0 +1,84 @@
+import ipywidgets as widgets
+from IPython.display import display, clear_output
+from IPython.display import display, HTML
+import datetime
+
+dashboard_title = dashboard_title = widgets.HTML(
+    value="<h2 style='color: green; text-align: left;'>Explainability of DST</h2>"
+)
+sequences = []
+for x, y in test_generator:
+    sequences.extend(x)
+    
+style = {'description_width': 'initial'} 
+
+
+start_date_widget = widgets.DatePicker(
+    description='Choose a date to watch:',
+    disabled=False,
+    style=style,
+    value=datetime.date(2010, 6, 29),
+    min=datetime.date(2010, 6, 29),
+    max=datetime.date(2022, 5, 13)
+)
+hours_to_watch_widget = widgets.IntSlider(value=12, min=0, max=24, step=1, description='How many hours to watch:',style=style)
+interval_length_widget = widgets.RadioButtons(options=[1, 2, 3],description='Zvoľte dĺžku intervalu:',value=2,disabled=False, style=style)
+index_widget = widgets.IntSlider(value=12,description='Choose a window during the day :', continuous_update=False,min=0,max=24, style=style)        
+
+
+
+generate_button = widgets.Button(description='Generate Graph')
+
+generate_button1 = widgets.Button(description='Generate Graph')
+
+output_container = widgets.Output()
+output_container1 = widgets.Output()
+
+def on_generate_button_clicked(b):
+    
+    selected_date = start_date_widget.value
+    start_index = (selected_date - datetime.date(2010, 6, 29)).days    
+    start_index = max(0, start_index) 
+    interval_length = interval_length_widget.value
+    hours_to_watch = hours_to_watch_widget.value
+    
+    if start_index == 0:
+        hours_to_watch = 14
+    else:
+        start_index = (start_index*24)-10
+    
+    fig = XAI_pre_DST_Predikciu_S(start_index, start_index+hours_to_watch, interval_length)
+  
+    
+    with output_container:
+        clear_output(wait=True)
+        display(fig)
+        
+def on_generate_button_clicked1(b):
+    
+    selected_date = start_date_widget.value
+    start_index = (selected_date - datetime.date(2010, 6, 29)).days    
+    start_index = max(0, start_index) 
+    index = index_widget.value
+    interval_length = interval_length_widget.value
+    hours_to_watch = hours_to_watch_widget.value
+    
+    if start_index == 0:
+        start_index = start_index*24
+    else:
+        start_index = (start_index*24)-10
+    
+    fig1 = XAI_pre_DST_Predikciu(sequences[start_index+index], model, interval_length,0, value_for_shutdown)
+    fig1.suptitle('Selected time window')
+    fig2 = XAI_pre_DST_Predikciu(sequences[start_index+index+1], model, interval_length,0, value_for_shutdown)
+    fig2.suptitle('Time window forward')
+    
+    with output_container1:
+        clear_output(wait=True)
+        display(fig1)
+        display(fig2)
+
+generate_button.on_click(on_generate_button_clicked)
+generate_button1.on_click(on_generate_button_clicked1)
+
+display(dashboard_title,start_date_widget, hours_to_watch_widget, interval_length_widget, generate_button, output_container, index_widget,generate_button1, output_container1)
