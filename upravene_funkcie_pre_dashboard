@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
-def XAI_pre_DST_Predikciu_V(data_instance, model, interval_length, class_of_interested, value_for_shutdown):
+def XAI_for_DST_Prediction_Values(data_instance, model, interval_length, class_of_interested, value_for_shutdown):
     testovacia_vzorka = data_instance.reshape(1,6,1)
     y_pred_single = model.predict(testovacia_vzorka)
     
@@ -27,12 +27,7 @@ def XAI_pre_DST_Predikciu_V(data_instance, model, interval_length, class_of_inte
     audio_scaled1 = np.repeat(audio_scaled,interval_length)
     return audio_scaled1,data_instance
 
-from sklearn.preprocessing import minmax_scale
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.lines import Line2D
-
-def XAI_pre_DST_Predikciu_S(index_Start, index_END,interval_length):
+def XAI_for_DST_Prediction_Vizualization(index_Start, index_END,interval_length):
     intervals = []
     valuesDST = []
     sequences = []
@@ -40,7 +35,7 @@ def XAI_pre_DST_Predikciu_S(index_Start, index_END,interval_length):
         sequences.extend(x)
         
     for i in range(0,(index_END-index_Start)+1):
-        interval, hodnoty = (XAI_pre_DST_Predikciu_V(sequences[index_Start+i], model,interval_length, 0, value_for_shutdown))
+        interval, hodnoty = (XAI_for_DST_Prediction_Values(sequences[index_Start+i], model,interval_length, 0, value_for_shutdown))
         intervals.append(interval)
         valuesDST.append(hodnoty)
         
