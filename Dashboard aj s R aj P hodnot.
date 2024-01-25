@@ -1,0 +1,142 @@
+import ipywidgets as widgets
+from IPython.display import display, clear_output
+from IPython.display import display, HTML
+import datetime
+
+dashboard_title = dashboard_title = widgets.HTML(
+    value="<h2 style='color: green; text-align: left;'>Explainability of DST</h2>"
+)
+sequences = []
+for x, y in test_generator:
+    sequences.extend(x)
+    
+style = {'description_width': 'initial'} 
+
+
+start_date_widget = widgets.DatePicker(
+    description='Choose a date to watch:',
+    disabled=False,
+    style=style,
+    value=datetime.date(2010, 6, 29),
+    min=datetime.date(2010, 6, 29),
+    max=datetime.date(2022, 5, 13)
+)
+hours_to_watch_widget = widgets.IntSlider(value=12, min=0, max=24, step=1, description='How many hours to watch:',style=style)
+interval_length_widget = widgets.RadioButtons(options=[1, 2, 3],description='Zvoľte dĺžku intervalu:',value=2,disabled=False, style=style)
+index_widget = widgets.IntSlider(value=12,description='Choose an hour during the day :', continuous_update=False,min=0,max=24, style=style)        
+
+
+
+generate_button = widgets.Button(description='Generate Graph')
+
+generate_button1 = widgets.Button(description='Generate Graph')
+
+generate_button2 = widgets.Button(description='Generate Graph')
+
+output_container = widgets.Output()
+output_container1 = widgets.Output()
+output_container2 = widgets.Output()
+
+
+def on_generate_button_clicked(b):
+    
+    selected_date = start_date_widget.value
+    start_index = (selected_date - datetime.date(2010, 6, 29)).days    
+    start_index = max(0, start_index) 
+    interval_length = interval_length_widget.value
+    hours_to_watch = hours_to_watch_widget.value
+    
+    if start_index == 0:
+        hours_to_watch = 14
+    else:
+        start_index = (start_index*24)-10
+    
+    fig = XAI_for_DST_Prediction_Vizualization(start_index, start_index+hours_to_watch, interval_length)
+  
+    
+    with output_container:
+        clear_output(wait=True)
+        display(fig)
+        
+def on_generate_button_clicked1(b):
+    
+    selected_date = start_date_widget.value
+    start_index = (selected_date - datetime.date(2010, 6, 29)).days    
+    start_index = max(0, start_index) 
+    index = index_widget.value
+    interval_length = interval_length_widget.value
+    hours_to_watch = hours_to_watch_widget.value
+    
+    if start_index == 0:
+        start_index = start_index*24
+    else:
+        start_index = (start_index*24)-11
+    
+    fig1 = XAI_for_DST_Prediction_with_predicted_value_for_dashboard(sequences[start_index+index],0, model, interval_length, 0, value_for_shutdown,index)
+    fig1.suptitle('Selected time window with predicted value')
+    fig2 = XAI_for_DST_Prediction_with_predicted_value_for_dashboard(sequences[start_index+index],sequences[start_index+index+1], model, interval_length, 0, value_for_shutdown,index)
+    fig2.suptitle('Selected time window with real value')
+    
+    with output_container1:
+        clear_output(wait=True)
+        display(fig1)
+        display(fig2)
+        
+def on_generate_button_clicked2(b):
+
+    selected_date = start_date_widget.value
+    start_index = (selected_date - datetime.date(2010, 6, 29)).days    
+    start_index = max(0, start_index) 
+    hours_to_watch = hours_to_watch_widget.value
+    last_elements = []
+    elements = []
+    start_index2 = 0
+    start_index1 = 0
+    hours_to_watch1 = hours_to_watch
+    hours_to_watch2 = hours_to_watch
+    
+    if start_index == 0:
+        hours_to_watch1 = 14
+        start_index1 = 1
+    else:
+        start_index1 = (start_index*24)-10
+    
+    for i in range(start_index1,start_index1+hours_to_watch1):
+        last_elements.append(sequences[i][-1])
+
+    fig3 = plt.figure(figsize=(26, 3))
+    plt.plot(last_elements, marker='o', c='green')
+    plt.xticks(range(hours_to_watch1))
+    plt.title('Real DST on ' + str(hours_to_watch1) + "-hour window")
+    plt.xlabel("Time in hours DST")
+    plt.grid(which='major', linestyle=':', color='black', linewidth='0.5')
+    plt.grid(which='major', linestyle=':', color='black', linewidth='0.5')
+    
+    if start_index == 0:
+        start_index2 = 0
+        hours_to_watch2 = 14
+    else:
+        start_index2 = (start_index*24)-11
+    
+    for i in range(start_index2,start_index2+hours_to_watch2):
+        elements.append(y_pred[i])
+    
+    fig4 = plt.figure(figsize=(26, 3))
+    plt.plot(elements, marker='o',  c='green') 
+    plt.xticks(range(hours_to_watch2))
+    plt.title('Predicted DST on '+ str(hours_to_watch2)+ "-hour window")
+    plt.xlabel("Time in hours DST")
+    plt.grid(which='minor', linestyle=':', color='black', linewidth='0.5')
+    plt.grid(which='major', linestyle=':', color='black', linewidth='0.5')
+    
+    
+    with output_container2:
+        clear_output(wait=True)
+        display(fig3)
+        display(fig4)
+
+generate_button.on_click(on_generate_button_clicked)
+generate_button1.on_click(on_generate_button_clicked1)
+generate_button2.on_click(on_generate_button_clicked2)
+
+display(dashboard_title, start_date_widget, hours_to_watch_widget,generate_button2, output_container2, index_widget,generate_button1,output_container1, interval_length_widget, generate_button, output_container)
