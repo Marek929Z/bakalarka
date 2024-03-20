@@ -1,0 +1,77 @@
+from sklearn.preprocessing import minmax_scale
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.lines import Line2D
+
+
+def XAI_for_DST_Prediction_with_predicted_value_for_dashboard(data_instance,data_instance2, model, interval_length, value_for_shutdown,max_range):
+    testovacia_vzorka = data_instance.reshape(1,6,1)
+    y_pred_single = model.predict(testovacia_vzorka)
+    
+    number_of_intervals = n_input // interval_length
+    importance_of_intervals = []
+    for i in range(number_of_intervals):
+        perturbovana_vzorka = np.zeros_like(testovacia_vzorka)
+        perturbovana_vzorka[:] = testovacia_vzorka[:]
+        
+        for x in range(number_of_intervals):
+            perturbovana_vzorka[0][i*interval_length:(i+1)*interval_length][0] = value_for_shutdown
+        nova_predikcia = model.predict(perturbovana_vzorka)
+        importance = y_pred_single[0][0] - nova_predikcia[0][0]
+        #if importance >= 0:
+           # importance = 0
+        importance_of_intervals.append(importance)
+ 
+    audio_scaled = minmax_scale(importance_of_intervals, feature_range=(0, 1))
+    for i in range(number_of_intervals):
+        audio_scaled[i] = 1 - audio_scaled[i]
+
+    # Add 'interval_length' number of zeros at the end
+    audio_scaled1 = np.concatenate([np.repeat(audio_scaled, interval_length), np.zeros(interval_length)])
+
+    
+    # Vizualizácia
+    if np.any(data_instance2 != 0):
+        dst = data_instance
+        dst_new = np.append(dst,data_instance2[-1])
+    else:
+        dst = data_instance
+        dst_new = np.append(dst,y_pred_single)
+    print(dst_new)
+
+    time_data = np.arange(7)
+    fig = plt.figure(figsize=(26,5))
+    
+    plt.plot(time_data, dst_new[0:7],color='black')
+    plt.xlabel("Časový priebeh (h)",fontsize=20)
+    plt.ylabel("DST", fontsize=20)
+    
+    ax = plt.subplot(111)
+    plt.minorticks_on()
+    grid_x_ticks = np.arange(max_range - 7, max_range+1, 1) % 24
+    ax.set_xticks(grid_x_ticks , minor=True)
+    ax.set_xticklabels(grid_x_ticks)
+    plt.tick_params(axis='x', labelsize=20)
+    plt.tick_params(axis='y', labelsize=20)
+    
+    plt.grid(which='minor', linestyle=':', color='black', linewidth='0.5')
+    plt.grid(which='major', linestyle=':', color='black', linewidth='0.5')
+    
+    custom_lines = [Line2D([0], [0], color= 'red', lw=4),
+                    Line2D([0], [0], color='orange', lw=4),
+                    Line2D([0], [0], color='yellow', lw=4),
+                    Line2D([0], [0], color='green', lw=4)]
+    if np.any(data_instance2 != 0):
+        ax.legend(custom_lines,['Veľmi dôležitá oblasť', 'Dôležitá oblasť', 'Menej dôležitá oblasť','Skutočná oblasť'],loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
+    else:
+        ax.legend(custom_lines,['Veľmi dôležitá oblasť', 'Dôležitá oblasť', 'Menej dôležitá oblasť','Oblasť predikcie'],loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
+
+    ymin, ymax = plt.ylim()
+    plt.fill_between(time_data, ymin, ymax, where= (audio_scaled1[0:7] > 0.85) & (audio_scaled1[0:7] <= 1) , color='red', alpha=0.8)
+    plt.fill_between(time_data, ymin, ymax, where= (audio_scaled1[0:7] > 0.6) & (audio_scaled1[0:7] <= 0.85), color='orange', alpha=1)
+    plt.fill_between(time_data, ymin, ymax, where= (audio_scaled1[0:7] > 0.5) & (audio_scaled1[0:7] <= 0.6), color='yellow', alpha=0.3)
+    plt.fill_between(time_data, ymin, ymax, where=(time_data >= time_data[-2]) & (time_data <= time_data[-1]), color='green', alpha=0.3)
+    
+    
+    plt.close(fig)
+    return fig
